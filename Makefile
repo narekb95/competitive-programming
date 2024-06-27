@@ -19,6 +19,9 @@ treap:
 unionfind:
 	cp algs/unionfind.cpp sol.cpp
 
+lca:
+	cp algs/lca.cpp sol.cpp
+
 clean:
 	rm -f out sol
 clean-all:
