@@ -14,7 +14,8 @@ using VVP = vector<VP>;
 template<class T>
 ostream& operator <<(ostream& out, const vector<T>& a){
 	for(const auto& x : a){
-		out << x << " " ;
+		if(&x != &a[0]) out << " ";
+		out << x;
 	}
 	return out;
 }
@@ -32,7 +33,7 @@ istream& operator >>(istream& in, vector<T> & a)
 
 template<class S, class T>
 ostream& operator <<(ostream& out, const pair<S,T>& p){
-	out <<"("<<p.X<<", "<<p.Y<<")";
+	out <<"("<<p.first<<", "<<p.second<<")";
 	return out;
 }
 

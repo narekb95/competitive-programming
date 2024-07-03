@@ -2,7 +2,7 @@ run: out
 	./out < in.txt
 
 out: sol.cpp
-	g++ -std=c++17 -O2 -Wall -Werror sol.cpp -o out
+	g++ -Wall -std=c++17 -O2  sol.cpp -o out
 
 
 solution:
