@@ -94,7 +94,6 @@ class Centroid{
 	I root;
 
 	I max_depth = 0;
-	I dec_root;
 	vector<Node_data> dec_data;
 	vector<vector<Ancestor_data>> ancestors; // maps root of subtree to its data
 	
@@ -230,10 +229,6 @@ private:
 	{
 		static vector<Ancestor_data> anc(G.size());
 		I center = find_centroid(u, dyn_sz, del);
-		if(dyn_sz[u] == (int)G.size())
-		{
-			dec_root = center;
-		}
 		dec_data[center].depth = d;
 		dec_data[center].parent = d_p;
 		max_depth = max(d, max_depth);
@@ -244,7 +239,7 @@ private:
 		copy(anc.begin(), anc.begin()+ind, ancestors[center].rbegin());
 
 		I p = par[center];
-		while(p != -1)
+		while(p != -1 && !del[p])
 		{
 			dyn_sz[p] -= dyn_sz[center];
 			p = par[p];
