@@ -1,7 +1,5 @@
 #include<bits/stdc++.h>
 
-#include<queue>
-
 using namespace std;
 
 using I = int;
@@ -42,17 +40,15 @@ ostream& operator <<(ostream& out, const pair<S,T>& p){
 	return out;
 }
 
-I dfs(I u, I p, V& sz, V& par, V& depth, VVP& G)
+I dfs(I u, I p, V& sz, V& par, V& depth, VV& G)
 {
 	static V vis(G.size());
 	vis[u] = true;
 	par[u] = p;
 	sz[u] = 1;
 	depth[u] = (p == -1 ? 0 : depth[p] + 1);
-	for(auto p : G[u])
+	for(auto v : G[u])
 	{
-		I v = p.first;
-		// I c = p.second;
 		if(vis[v]) continue;
 		sz[u] += dfs(v, u, sz, par, depth, G);
 	}
@@ -61,51 +57,89 @@ I dfs(I u, I p, V& sz, V& par, V& depth, VVP& G)
 
 class Centroid{
 
+	struct Ancestor_data
+	{
+		I ancestor;
+		I neighbor;
+		I distance;
+		Ancestor_data(){}
+		Ancestor_data(I ancestor, I neighbor, I distance = -1):ancestor(ancestor), neighbor(neighbor), distance(distance){}
+	};
+
 	struct Node_data{
 		I state = 0;
 		I parent;
 		I depth;
-		V ancestor_distance;
-		V descendants;
 		// priority_queue<P, VP, greater<P>> white_descendants;
 		multiset<I> white_descendants;
 
 
 		friend ostream& operator<<(ostream& out, const Node_data& data)
 		{
-			out << "Parent: " << data.parent + 1 << ".  Depth: " << data.depth <<  ". Descendants: " << data.descendants << ". Distances: " << data.ancestor_distance << endl;
+			out << "Parent: " << data.parent + 1 << ".  Depth: " << data.depth << endl;
 			return out;
 		}
 	};
 
-	struct Subtree_data{
-		I neighbor;
-		I center;
-		I distance_to_white;
-		Subtree_data(){}
-		Subtree_data(I neighbor, I center, I distance_to_white = -1):neighbor(neighbor), center(center), distance_to_white(distance_to_white){};
-	};
+	// struct Subtree_data{
+	// 	I neighbor;
+	// 	I center;
+	// 	I distance_to_white;
+	// 	Subtree_data(){}
+	// 	Subtree_data(I neighbor, I center, I distance_to_white = -1):neighbor(neighbor), center(center), distance_to_white(distance_to_white){};
+	// };
 
-	const VVP& G;
+	const VV& G;
 	const V& par;
-	const I& root;
+	I root;
 
+	I max_depth = 0;
+	I dec_root;
 	vector<Node_data> dec_data;
-	vector<vector<Subtree_data>> subtrees; // maps root of subtree to its data
+	vector<vector<Ancestor_data>> ancestors; // maps root of subtree to its data
 	
 
 public:
-	Centroid(const VVP& G, const V& par, const V& sz, const I& root):G(G), par(par), root(root), dec_data(G.size()), subtrees(G.size())
+	Centroid(const VV& G, const V& par, const V& sz, const I& root):G(G), par(par), root(root), dec_data(G.size()), ancestors(G.size())
 	{
-		V del(G.size(), 0);
+		I n = G.size();
+		V del(n, 0);
 		V dyn_sz = sz;
-		decompose(root, -1, 0, dyn_sz, del);
-		// I ind = 0;
-		// for(const auto& data : dec_data)
+		vector<Ancestor_data> ancestor_arr(n);
+		decompose(root, -1, 0, ancestor_arr, 0, dyn_sz, del);
+		// cout << "Decomposition done\n";
+		// for(I i = 0; i < n; i++)
 		// {
-		// 	cout << ind + 1<< ": " << data << endl;
-		// 	ind ++;
+		// 	const auto& data = dec_data[i];
+		// 	cout << i+1 << ": depth:" << data.depth << ", parent: " << data.parent + 1 << endl;
 		// }
+		// compute ancestor distances
+		// neighbor of any anc is in the subtree so can compute by depth of anc
+		for(I d = max_depth -1, i; d >= 0; d--)
+		{
+			for(i = 0; i < n; i++)
+			{
+				// if equal depth => same element => already computed
+				if(dec_data[i].depth <= d)
+				{
+					continue;
+				}
+				I d_diff = dec_data[i].depth - d;
+				auto &anc = ancestors[i][d_diff];
+				anc.distance = get_cost(i, anc.neighbor) + 1;
+				// cout << i+1 << " " << anc.ancestor + 1 << " " << anc.neighbor + 1 << " " << anc.distance << endl;
+			}
+		}
+		// for(I i = 0; i < n; i++)
+		// {
+		// 	cout << i+1 << ": ";
+		// 	for(auto& anc : ancestors[i])
+		// 	{
+		// 		cout << "("<<anc.ancestor + 1 << ", " << anc.distance << "), ";
+		// 	}
+		// 	cout << endl;
+		// }
+		// cout << "Ancestor distances computed\n";
 	}
 
 	void flip_state(I x)
@@ -125,13 +159,10 @@ public:
 		// 	anc = dec_data[anc].parent;
 		// 	anc_ind++;
 		// }
-
-		I anc = x;
-		I anc_ind = 0;
-		I dst = 0;
-		while(anc != -1)
+		for(const auto& anc_o : ancestors[x])
 		{
-			auto& anc_data = dec_data[anc];
+			auto& anc_data = dec_data[anc_o.ancestor];
+			I dst = anc_o.distance;
 			if(state == 0)
 			{
 				auto it = anc_data.white_descendants.find(dst);
@@ -141,9 +172,6 @@ public:
 			{
 				anc_data.white_descendants.insert(dst);
 			}
-			anc = anc_data.parent;
-			anc_ind++;
-			dst = dec_data[x].ancestor_distance[anc_ind];
 		}
 	}
 
@@ -153,27 +181,16 @@ public:
 		{
 			return 0;
 		}
-		const auto& data = dec_data[x];	
 		I opt = INFTY;
-		I anc = x;
-		I anc_ind = 0;
-		while(anc != -1){
-			auto& anc_data = dec_data[anc];
-			I d = INFTY;
-			if(anc_data.state == 1)
+		for(const auto& anc_o : ancestors[x])
+		{
+			const auto& anc_data = dec_data[anc_o.ancestor];
+			I d = anc_data.white_descendants.empty() ? INFTY : *anc_data.white_descendants.begin();
+			if(d==INFTY)
 			{
-				d = 0;
+				continue;
 			}
-			else
-			{
-				d = anc_data.white_descendants.empty() ? INFTY : *anc_data.white_descendants.begin();
-			}
-			if(d != INFTY)
-			{
-				opt = min(opt, d + data.ancestor_distance[anc_ind]);
-			}
-			anc = anc_data.parent;
-			anc_ind++;
+			opt = min(opt, d + anc_o.distance);
 		}
 		return opt;
 	}
@@ -194,7 +211,7 @@ private:
 			done = true;
 			for(auto p : G[u])
 			{
-				I v = p.first;
+				I v = p;
 				if(del[v] || v == par[u])
 				{
 					continue;
@@ -210,19 +227,21 @@ private:
 		return u;
 	}
 
-	I decompose(I u, I dec_p, I d, V& dyn_sz, V& del)
+	void decompose(I u, I d_p, I d, vector<Ancestor_data>& anc, I ind, V& dyn_sz, V& del)
 	{
 		I center = find_centroid(u, dyn_sz, del);
-		auto& data = dec_data[center];
-		auto& subtree = subtrees[center];
-		subtree.assign(G[center].size(), Subtree_data());
-		// cout << center << endl;
-		
-		data.descendants.push_back(center);
-		data.ancestor_distance.push_back(0);
-		data.parent = dec_p;
-		data.depth = d;
+		if(dyn_sz[u] == (int)G.size())
+		{
+			dec_root = center;
+		}
+		dec_data[center].depth = d;
+		dec_data[center].parent = d_p;
+		max_depth = max(d, max_depth);
 		del[center] = 1;
+
+		anc[ind++] = {center, -1, 0};
+		ancestors[center].resize(ind);
+		copy(anc.begin(), anc.begin()+ind, ancestors[center].rbegin());
 
 		I p = par[center];
 		while(p != -1)
@@ -231,31 +250,17 @@ private:
 			p = par[p];
 		}
 		
-		for(const auto& p : G[center]) // possibly parent as well
+		for(I neighbor : G[center]) // possibly parent as well
 		{
-			const auto& neighbor = p.first;
 			if(del[neighbor]) continue;
-			const auto& edge_weight = p.second;
-			I neighbor_ind = distance(&G[center][0], &p);
-			
-			I sub_root = decompose(neighbor, center, d+1, dyn_sz, del);
-			subtree[neighbor_ind] = Subtree_data(neighbor, sub_root);
-			for(const auto& w : dec_data[sub_root].descendants)
-			{
-				data.descendants.push_back(w);
-				I dst = get_cost(w, neighbor) + edge_weight;
-				dec_data[w].ancestor_distance.push_back(dst);
-			}
+			anc[ind-1].neighbor = neighbor;
+			anc[ind-1].distance = -1;
+			decompose(neighbor, center, d+1, anc, ind, dyn_sz, del);
 		}
-		return center;
 	}
 
 	I get_cost(I u, I v)
 	{
-		if(dec_data[u].depth < dec_data[v].depth)
-		{
-			swap(u, v);
-		}
 		I pu = u;
 		I pv = v;
 		while(pu != pv)
@@ -269,26 +274,25 @@ private:
 				pv = dec_data[pv].parent;
 			}
 		}
-		I dst_u = dec_data[u].ancestor_distance[dec_data[u].depth - dec_data[pu].depth];
-		I dst_v = dec_data[v].ancestor_distance[dec_data[v].depth - dec_data[pv].depth];
+		I dst_u = ancestors[u][dec_data[u].depth - dec_data[pu].depth].distance;
+		I dst_v = ancestors[v][dec_data[v].depth - dec_data[pv].depth].distance;
 		return dst_u + dst_v;
 	}
 };
 
-void solve(I t)
+void solve()
 {
+	I r;
 	I n;
-	cin >> n;
-	VVP G(n);
+	r = scanf("%d", &n);
+	VV G(n);
 	for(I i = 0; i < n - 1; i++)
 	{
 		I u,v;
-		I c;
-		cin >> u >> v;
-		c = 1;
+		r = scanf("%d %d", &u, &v);
 		u--;v--;
-		G[u].push_back(P{v, c});
-		G[v].push_back(P{u, c});
+		G[u].push_back(v);
+		G[v].push_back(u);
 	}
 	I root = 0;
 	V sz(n, 0);
@@ -303,11 +307,11 @@ void solve(I t)
 	Centroid centroid(G, par, sz, root);
 	
 	I tt;
-	cin >> tt;
+	r = scanf("%d", &tt);
 	while(tt--)
 	{
 		I q, x;
-		cin >> q >> x;
+		r = scanf("%d %d", &q, &x);
 		x--;
 		I v;
 		if(q == 0)
@@ -316,26 +320,17 @@ void solve(I t)
 		}
 		else
 		{
-			cout << ((v = centroid.query(x)) == INFTY?-1: v) << endl;
+			printf("%d\n", ((v = centroid.query(x)) == INFTY?-1: v));
+			// cout << ((v = centroid.query(x)) == INFTY?-1: v) << endl;
 		}
 	}
+	assert(r);
 }
 
 
 
 int main()
 {
-	//Make IO fast
-	ios_base::sync_with_stdio(0);
-
-//	I t;
-//	cin >> t;
-//	for(int i = 0; i < t; i++)
-//	{
-//		solve(i+1);
-//	}
-
-	solve(0);
-
+	solve();
 	return 0;
 }
