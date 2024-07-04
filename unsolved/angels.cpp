@@ -42,13 +42,13 @@ ostream& operator <<(ostream& out, const pair<S,T>& p){
 const I INF = 1<<30;
 class Flow
 {
-	I n;
 	VV cap, flow;
 	I src, sink;
 	I flow_val = 0;
 
 	I find_aug_path(const VV& G)
 	{
+		I n = G.size();
 		queue<I> q;
 		V parent(n, -1);
 		q.push(src);
@@ -88,6 +88,7 @@ class Flow
 	}
 	void run(const VV& G)
 	{
+		I n = G.size();
 		for(I u = 0; u < n; u++)
 		{
 			for(const I& v : G[u])
@@ -105,11 +106,12 @@ public:
 	Flow(){}
 	void init(const VV& G, I src, I sink)
 	{
-		n = G.size();
+		I n = G.size();
 		this->src = src;
 		this->sink = sink;
 		cap.assign(n, V(n));
 		flow.assign(n, V(n));
+		flow_val = 0;
 		run(G);
 	}
 	I get_flow() const
@@ -119,33 +121,37 @@ public:
 } flow;
 
 class BipMat{
-	VV& F;
-	I n, n0, n1;
 public:
-	BipMat(VV& G, I n0) : F(G), n(G.size()), n0(n0), n1(n - n0)
+	BipMat(){}
+	void run(VV& G, I n0) 
 	{
-		I src = n, sink = n + 1;
+		VV F(G);
+		I n = F.size();
+		I n1 = n - n0;
+		I src = n;
+		I sink = n + 1;
 		F.push_back(V(n0));
-		iota(F.back().begin(), F.back().end(), 0);
 		F.push_back(V());
+
+		iota(F.back().begin(), F.back().end(), 0);
 		for(I i = 0; i < n1; i++)
 		{
 			F[n0 + i].push_back(n+1);
 		}
+
 		flow.init(F, src, sink);
 	}
 	I get_val() const
 	{
 		return flow.get_flow();
 	}
-};
+} matching;
 
 void solve(I t)
 {
 	I n, m;
 	cin >> n >> m;
-	static VV a;
-	a.resize(n, V(m));
+	VV a(n, V(m));
 	char x;
 	for(I i = 0; i < n; i++)
 	{
@@ -178,13 +184,15 @@ void solve(I t)
 			if(a[i][j] == 0)
 			{
 				contains_cells = true;
-			} else if(a[i][j] == 1)
+			}
+			else if(a[i][j] == 1)
 			{
 				if(contains_cells)
 				{
 					row_segs.push_back({i, {s, j-1}});
 				}
 				s = j+1;
+				contains_cells = false;
 			}
 		}
 		if(contains_cells)
@@ -203,13 +211,15 @@ void solve(I t)
 			if(a[i][j] == 0)
 			{
 				contains_cells = true;
-			} else if(a[i][j] == 1)
+			}
+			else if(a[i][j] == 1)
 			{
 				if(contains_cells)
 				{
 					col_segs.push_back({j, {s, i-1}});
 				}
 				s = i+1;
+				contains_cells = false;
 			}
 		}
 		if(contains_cells)
@@ -260,7 +270,7 @@ void solve(I t)
 
 
 	// cout << "Calling matching" << endl;
-	BipMat matching(G, n1);
+	matching.run(G, n1);
 	cout << matching.get_val() << endl;
 }
 
