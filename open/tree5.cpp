@@ -91,8 +91,10 @@ class Centroid{
 
 	const VV& G;
 	const V& par;
-	const I& root;
+	I root;
 
+	I max_depth = 0;
+	I dec_root;
 	vector<Node_data> dec_data;
 	vector<vector<Ancestor_data>> ancestors; // maps root of subtree to its data
 	
@@ -104,23 +106,40 @@ public:
 		V del(n, 0);
 		V dyn_sz = sz;
 		vector<Ancestor_data> ancestor_arr(n);
-		decompose(root, 0, ancestor_arr, 0, dyn_sz, del);
-		cout << "Decomposition done\n";
+		decompose(root, -1, 0, ancestor_arr, 0, dyn_sz, del);
+		// cout << "Decomposition done\n";
+		// for(I i = 0; i < n; i++)
+		// {
+		// 	const auto& data = dec_data[i];
+		// 	cout << i+1 << ": depth:" << data.depth << ", parent: " << data.parent + 1 << endl;
+		// }
 		// compute ancestor distances
-		for(I i =0 ; i < n; i++)
+		// neighbor of any anc is in the subtree so can compute by depth of anc
+		for(I d = max_depth -1, i; d >= 0; d--)
 		{
-			for(auto& anc : ancestors[i])
+			for(i = 0; i < n; i++)
 			{
+				// if equal depth => same element => already computed
+				if(dec_data[i].depth <= d)
+				{
+					continue;
+				}
+				I d_diff = dec_data[i].depth - d;
+				auto &anc = ancestors[i][d_diff];
 				anc.distance = get_cost(i, anc.neighbor) + 1;
+				// cout << i+1 << " " << anc.ancestor + 1 << " " << anc.neighbor + 1 << " " << anc.distance << endl;
 			}
 		}
-		cout << "Ancestor distances computed\n";
-		// I ind = 0;
-		// for(const auto& data : dec_data)
+		// for(I i = 0; i < n; i++)
 		// {
-		// 	cout << ind + 1<< ": " << data << endl;
-		// 	ind ++;
+		// 	cout << i+1 << ": ";
+		// 	for(auto& anc : ancestors[i])
+		// 	{
+		// 		cout << "("<<anc.ancestor + 1 << ", " << anc.distance << "), ";
+		// 	}
+		// 	cout << endl;
 		// }
+		// cout << "Ancestor distances computed\n";
 	}
 
 	void flip_state(I x)
@@ -217,11 +236,16 @@ private:
 		return u;
 	}
 
-	void decompose(I u, I d, vector<Ancestor_data>& anc, I ind, V& dyn_sz, V& del)
+	void decompose(I u, I d_p, I d, vector<Ancestor_data>& anc, I ind, V& dyn_sz, V& del)
 	{
 		I center = find_centroid(u, dyn_sz, del);
-		
+		if(dyn_sz[u] == (int)G.size())
+		{
+			dec_root = center;
+		}
 		dec_data[center].depth = d;
+		dec_data[center].parent = d_p;
+		max_depth = max(d, max_depth);
 		del[center] = 1;
 
 		anc[ind++] = {center, -1, 0};
@@ -239,16 +263,13 @@ private:
 		{
 			if(del[neighbor]) continue;
 			anc[ind-1].neighbor = neighbor;
-			decompose(neighbor, d+1, anc, ind + 1, dyn_sz, del);
+			anc[ind-1].distance = -1;
+			decompose(neighbor, center, d+1, anc, ind, dyn_sz, del);
 		}
 	}
 
 	I get_cost(I u, I v)
 	{
-		if(dec_data[u].depth < dec_data[v].depth)
-		{
-			swap(u, v);
-		}
 		I pu = u;
 		I pv = v;
 		while(pu != pv)
