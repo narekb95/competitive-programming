@@ -25,4 +25,4 @@ lca:
 clean:
 	rm -f out sol
 clean-all:
-	rm -f sol.cpp out sol in.txt
+	rm -f sol.cpp out sol in*.txt *.out
