@@ -105,8 +105,7 @@ public:
 		I n = G.size();
 		V del(n, 0);
 		V dyn_sz = sz;
-		vector<Ancestor_data> ancestor_arr(n);
-		decompose(root, -1, 0, ancestor_arr, 0, dyn_sz, del);
+		decompose(root, -1, 0, 0, dyn_sz, del);
 		// cout << "Decomposition done\n";
 		// for(I i = 0; i < n; i++)
 		// {
@@ -227,8 +226,9 @@ private:
 		return u;
 	}
 
-	void decompose(I u, I d_p, I d, vector<Ancestor_data>& anc, I ind, V& dyn_sz, V& del)
+	void decompose(I u, I d_p, I d,  I ind, V& dyn_sz, V& del)
 	{
+		static vector<Ancestor_data> anc(G.size());
 		I center = find_centroid(u, dyn_sz, del);
 		if(dyn_sz[u] == (int)G.size())
 		{
@@ -255,28 +255,39 @@ private:
 			if(del[neighbor]) continue;
 			anc[ind-1].neighbor = neighbor;
 			anc[ind-1].distance = -1;
-			decompose(neighbor, center, d+1, anc, ind, dyn_sz, del);
+			decompose(neighbor, center, d+1, ind, dyn_sz, del);
 		}
 	}
 
 	I get_cost(I u, I v)
 	{
-		I pu = u;
-		I pv = v;
-		while(pu != pv)
+		I du = dec_data[u].depth;
+		I dv = dec_data[v].depth;
+		assert(du != 0 && dv != 0);
+		I s = 0;
+		I e = min(du, dv) + 1;
+		I d;
+		I dfu = -1, dfv = -1;
+		const auto& ancu = ancestors[u];
+		const auto& ancv = ancestors[v];
+
+		while(s+1 < e)
 		{
-			if(dec_data[pu].depth > dec_data[pv].depth)
+			d = (s+e)/2; // depth of anc
+			dfu = du-d;
+			dfv = dv-d;
+			if(ancu[dfu].ancestor == ancv[dfv].ancestor)
 			{
-				pu = dec_data[pu].parent;
+				s = d;
 			}
 			else
 			{
-				pv = dec_data[pv].parent;
+				e = d;
 			}
 		}
-		I dst_u = ancestors[u][dec_data[u].depth - dec_data[pu].depth].distance;
-		I dst_v = ancestors[v][dec_data[v].depth - dec_data[pv].depth].distance;
-		return dst_u + dst_v;
+		dfu = du - s;
+		dfv = dv - s;
+		return ancu[dfu].distance + ancv[dfv].distance;
 	}
 };
 
