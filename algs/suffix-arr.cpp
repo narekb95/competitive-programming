@@ -51,7 +51,7 @@ public:
 		ord.resize(n);
 		cls.resize(n);
 		iota(ord.begin(), ord.end(), 0);	
-		sort(ord.begin(), ord.end(), [&](I i, I j){
+		stable_sort(ord.begin(), ord.end(), [&](I i, I j){
 			return s[i] < s[j];
 		});
 		for(I i = 0; i < n; i++)
@@ -87,7 +87,7 @@ public:
 		};
 		for(I i = 1; (1<<i) <= n; i++)
 		{
-			sort(ord.begin(), ord.end(), [&](I a, I b){
+			stable_sort(ord.begin(), ord.end(), [&](I a, I b){
 				return cmp(a, b, i - 1) < 0;
 			});
 			V cls_new(n);
@@ -110,10 +110,17 @@ public:
 			cls = move(cls_new);
 		}
 	}
+	I get_smallest_ind(){
+		return ord[0];
+	}
 } suff;
 
 void solve(I t)
 {
+	string s;
+	cin >> s;
+	suff.Build(s);
+	cout << suff.get_smallest_ind() + 1 << endl;
 
 }
 
