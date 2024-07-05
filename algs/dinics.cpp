@@ -116,11 +116,10 @@ public:
 			}
 		}
 		V dst;
-		V itr(n, 0);
 		while(getLevel(dst) != INF)
 		{
-			cout << "Level: " << dst << endl;
 			I c;
+			V itr(n, 0);
 			while((c=dfs(src, INF, itr, dst)))
 			{
 				flow_value += c;
