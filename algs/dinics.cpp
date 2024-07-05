@@ -106,6 +106,8 @@ public:
 	{
 		n = a.size();
 		G.assign(n, V());
+		edges.clear();
+		flow_value = 0;
 		this->src = src;
 		this->trg = trg;
 		for(I i = 0; i < n; i++)
@@ -129,20 +131,40 @@ public:
 	}	
 } dinics;
 
-void solve(I t)
+void solve()
 {
-	I n, m;
-	cin >> n >> m;
-	VVP a(n);
-	for(I i = 0; i < m; i++)
+	I a, b;
+	cin >> a >> b;
+	I n = a+b+2;
+	I s = n - 2, t = n-1;
+	VVP G(n);
+	I sum = 0;
+	for(I i = 0; i < a; i++)
 	{
-		I u, v, c;
-		cin >> u >> v >> c;
-		u--; v--;
-		a[u].push_back({v, c});
-		a[v].push_back({u, c});
+		I c;
+		cin >> c;
+		sum += c;
+		G[s].push_back({i, c});
 	}
-	cout << dinics.run(a, 0, n-1) << endl;
+	for(I i = 0; i < b; i++)
+	{
+		I c;
+		cin >> c;
+		G[a+i].push_back({t, c});
+	}
+	for(I i = 0; i < b; i++)
+	{
+		I k;
+		cin >> k;
+		for(I j = 0; j < k; j++)
+		{
+			I x;
+			cin >> x;
+			x--;
+			G[x].push_back({a+i, INF});
+		}
+	}
+	cout << sum - dinics.run(G, s, t) << endl;
 }
 
 int main()
@@ -150,14 +172,14 @@ int main()
 	//Make IO fast
 	ios_base::sync_with_stdio(0);
 
-	// I t;
-	// cin >> t;
-	// for(int i = 0; i < t; i++)
-	// {
-	// 	solve(i+1);
-	// }
+	I t;
+	cin >> t;
+	for(int i = 0; i < t; i++)
+	{
+		solve();
+	}
 
-	solve(0);
+	// solve(0);
 
 	return 0;
 }
