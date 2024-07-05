@@ -119,6 +119,7 @@ public:
 		V itr(n, 0);
 		while(getLevel(dst) != INF)
 		{
+			cout << "Level: " << dst << endl;
 			I c;
 			while((c=dfs(src, INF, itr, dst)))
 			{
@@ -128,6 +129,7 @@ public:
 		return flow_value;
 	}	
 } dinics;
+
 void solve(I t)
 {
 	I n, m;
@@ -149,14 +151,14 @@ int main()
 	//Make IO fast
 	ios_base::sync_with_stdio(0);
 
-	I t;
-	cin >> t;
-	for(int i = 0; i < t; i++)
-	{
-		solve(i+1);
-	}
+	// I t;
+	// cin >> t;
+	// for(int i = 0; i < t; i++)
+	// {
+	// 	solve(i+1);
+	// }
 
-	// solve(0);
+	solve(0);
 
 	return 0;
 }
