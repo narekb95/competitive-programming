@@ -37,91 +37,141 @@ ostream& operator <<(ostream& out, const pair<S,T>& p){
 	return out;
 }
 
-class SuffixArray
+class SuffTree
 {
-	V cls, ord; // class, order
-	I n;
-	string s_cyc;
-public:
-	SuffixArray(){}
-	void Build(const string& s)
+	string s;
+	I l;
+	struct Node
 	{
-		n = s.size();
-		s_cyc = s + s;
-		ord.resize(n);
-		cls.resize(n);
-		iota(ord.begin(), ord.end(), 0);	
-		stable_sort(ord.begin(), ord.end(), [&](I i, I j){
-			return s[i] < s[j];
-		});
-		for(I i = 0; i < n; i++)
+		Node* parent = nullptr;
+		vector<Node*> children;
+
+		I start;
+		I end;
+
+		I size = 0;
+		I count_end = 0; // count end is stuped since we len is fixed then suff is fixed
+		Node():children(26, nullptr){}
+		~Node()
 		{
-			if(i == 0)
+			for(auto& child : children)
 			{
-				cls[ord[0]] = 0;
+				delete child;
+			}
+		}
+
+		Node(Node* parent, I start, I end, I size, I count_end):parent(parent),children(26, nullptr),start(start), end(end), size(size), count_end(count_end){}
+	} *root = new Node();
+
+	void insert(I q_ind)
+	{
+		Node* curr = root;
+		I i = q_ind;
+		while(i < l)
+		{
+			I j = curr->start;
+			while(i < l && j < curr->end && s[i] == s[j])
+			{
+				i++;
+				j++;
+			}
+			if(i == l && j == curr->end)
+			{
+				curr->size++;
+				curr->count_end++;
+				return;
+			}
+			if(j == curr->end)
+			{
+				curr->size++;
+				if(curr->children[s[i]-'a'] == nullptr)
+				{
+					curr->children[s[i]-'a'] = new Node(curr, i, l, 1, 1);
+					return;
+				}
+				curr = curr->children[s[i]-'a'];
 				continue;
 			}
-			if(s[ord[i]] == s[ord[i-1]])
+			// either s ended first or diverged
+			Node* new_node = new Node(curr->parent, curr->start, j, curr->size+1, 0);
+			new_node->parent->children[s[curr->start]-'a'] = new_node;
+			new_node->children[s[j]-'a'] = curr;
+			curr->parent = new_node;
+			curr->start = j;
+			if(i == l)
 			{
-				cls[ord[i]] = cls[ord[i-1]];
+				new_node->count_end = 1;
 			}
 			else
 			{
-				cls[ord[i]] = cls[ord[i-1]] + 1;
+				new_node->children[s[i]-'a'] = new Node(new_node, i, l, 1, 1);
 			}
-		}
-		auto cmp = [&](I a, I b, I l){
-			if(cls[a] != cls[b])
-			{
-				return (cls[a] - cls[b] > 0) * 2 - 1;
-			}
-			I a2 = a + (1<<l);
-			if(a2 >= n) a2 -= n;
-			I b2 = b + (1<<l);
-			if(b2 >= n) b2 -= n;
-			if(cls[a2] != cls[b2])
-			{
-				return (cls[a2] - cls[b2] > 0) * 2 - 1;
-			}
-			return 0;
-		};
-		for(I i = 1; (1<<i) <= n; i++)
-		{
-			stable_sort(ord.begin(), ord.end(), [&](I a, I b){
-				return cmp(a, b, i - 1) < 0;
-			});
-			V cls_new(n);
-			for(I j = 0; j < n; j++)
-			{
-				if(j == 0)
-				{
-					cls_new[ord[0]] = 0;
-					continue;
-				}
-				if(cmp(ord[j], ord[j-1], i - 1) == 0)
-				{
-					cls_new[ord[j]] = cls_new[ord[j-1]];
-				}
-				else
-				{
-					cls_new[ord[j]] = cls_new[ord[j-1]] + 1;
-				}
-			}
-			cls = move(cls_new);
+			return;
 		}
 	}
-	I get_smallest_ind(){
-		return ord[0];
+public:
+	SuffTree(){}
+	~SuffTree()
+	{
+		delete(root);
+	}
+	void init(const string& s)
+	{
+		this->s = s;
+		l = s.size();
+		delete(root);
+		root = new Node();
+		for(I i = 0; i < l; i++)
+		{
+			insert(i);
+		}
+	}
+
+	I count(const string& qs)
+	{
+		Node* curr = root;
+		I n = qs.size();
+		I i = 0;
+		while(i < n)
+		{
+			I j = curr->start;
+			while(i < n && j < curr->end && qs[i] == s[j])
+			{
+				i++;
+				j++;
+			}
+			if(i == n)
+			{
+				return curr->size;
+			}
+			if(j == curr->end)
+			{
+				if(curr->children[qs[i]-'a'] == nullptr)
+				{
+					return 0;
+				}
+				curr = curr->children[qs[i]-'a'];
+				continue;
+			}
+			return 0;
+		}
+		assert(false);
 	}
 } suff;
 
 void solve(I t)
 {
+	I n, q;
+	cin >> n >> q;
 	string s;
 	cin >> s;
-	suff.Build(s);
-	cout << suff.get_smallest_ind() + 1 << endl;
-
+	suff.init(s);
+	while(q--)
+	{
+		string t;
+		cin >> t;
+		cout << suff.count(t) << '\n';
+	}
 }
 
 int main()
@@ -129,14 +179,14 @@ int main()
 	//Make IO fast
 	ios_base::sync_with_stdio(0);
 
-	I t;
-	cin >> t;
-	for(int i = 0; i < t; i++)
-	{
-		solve(i+1);
-	}
+	// I t;
+	// cin >> t;
+	// for(int i = 0; i < t; i++)
+	// {
+	// 	solve(i+1);
+	// }
 
-	// solve(0);
+	solve(0);
 
 	return 0;
 }
