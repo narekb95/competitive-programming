@@ -64,7 +64,7 @@ class SuffTree
 		while(i < l)
 		{
 			Node& curr = nodes[ind];
-			// cout << "\"" << s.substr(curr.start, curr.end-curr.start) << "\"" << endl;
+			// cout << "\"" << s.substr(curr.start, curr.end-curr.start) << "\" " << curr.size << endl;
 			I j = curr.start;
 			while(i < l && j < curr.end && s[i] == s[j])
 			{
@@ -95,10 +95,10 @@ class SuffTree
 			Node& new_node = nodes.back();
 			new_node.children[s[j]-'a'] = ind;
 			// update child of parent
-			nodes[new_node.parent].children[s[curr.start]-'a'] = new_ind;
+			nodes[new_node.parent].children[s[nodes[ind].start]-'a'] = new_ind;
 			// update current
-			curr.parent = new_ind;
-			curr.start = j;
+			nodes[ind].parent = new_ind;
+			nodes[ind].start = j;
 			// process new node
 			if(i < l)
 			{
@@ -132,6 +132,7 @@ public:
 		while(i < n)
 		{
 			const Node& curr = nodes[ind];
+			// cout << curr.start << " " <<curr.end << " " << "\"" << s.substr(curr.start, curr.end-curr.start) << "\" " << curr.size << endl;
 			I j = curr.start;
 			while(i < n && j < curr.end && qs[i] == s[j])
 			{
