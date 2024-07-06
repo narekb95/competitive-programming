@@ -48,10 +48,9 @@ class SuffTree
 		I end = 0;
 
 		I size = 0;
-		I count_end = 0; // count end is stuped since we len is fixed then suff is fixed
 		Node():children(26, -1){}
 
-		Node(I parent, I start, I end, I size, I count_end):parent(parent),children(26, -1),start(start), end(end), size(size), count_end(count_end){}
+		Node(I parent, I start, I end, I size):parent(parent),children(26, -1),start(start), end(end), size(size){}
 	};
 	
 	string s;
@@ -75,7 +74,6 @@ class SuffTree
 			if(i == l && j == curr.end)
 			{
 				curr.size++;
-				curr.count_end++;
 				return;
 			}
 			if(j == curr.end)
@@ -84,28 +82,28 @@ class SuffTree
 				if(curr.children[s[i]-'a'] == -1)
 				{
 					curr.children[s[i]-'a'] = nodes.size();
-					nodes.push_back(Node(ind, i, l, 1, 1));
+					nodes.push_back(Node(ind, i, l, 1));
 					return;
 				}
 				ind = curr.children[s[i]-'a'];
 				continue;
 			}
 			// either s ended first or diverged
-			I newind = nodes.size();
-			nodes.push_back(Node(curr.parent, curr.start, j, curr.size+1, 0));
-			Node& new_node = nodes[newind];
-			nodes[new_node.parent].children[s[curr.start]-'a'] = newind;
+			// cut node at index j
+			I new_ind = nodes.size();
+			nodes.push_back(Node(curr.parent, curr.start, j, curr.size+1));
+			Node& new_node = nodes.back();
 			new_node.children[s[j]-'a'] = ind;
-			curr.parent = newind;
+			// update child of parent
+			nodes[new_node.parent].children[s[curr.start]-'a'] = new_ind;
+			// update current
+			curr.parent = new_ind;
 			curr.start = j;
-			if(i == l)
-			{
-				new_node.count_end = 1;
-			}
-			else
+			// process new node
+			if(i < l)
 			{
 				new_node.children[s[i]-'a'] = nodes.size();
-				nodes.push_back(Node(newind, i, l, 1, 1));
+				nodes.push_back(Node(new_ind, i, l, 1));
 			}
 			return;
 		}
